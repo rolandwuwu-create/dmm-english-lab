@@ -1,6 +1,7 @@
 (function (global) {
   const KEY = "dmm-lab-student-v1";
   const TEACHER_KEY = "dmm-lab-teacher-v1";
+  const CLASS_KEY = "dmm-lab-class-code";
 
   function uid() {
     return crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -22,19 +23,66 @@
     };
   }
 
+  function rememberedClassCode() {
+    try {
+      return String(localStorage.getItem(CLASS_KEY) || "").trim().toUpperCase();
+    } catch {
+      return "";
+    }
+  }
+
+  function rememberClassCode(code) {
+    const v = String(code || "").trim().toUpperCase();
+    if (!v) return;
+    try {
+      localStorage.setItem(CLASS_KEY, v);
+    } catch {
+      /* quota or private mode */
+    }
+  }
+
+  function mergeStudent(saved) {
+    const blank = blankStudent();
+    const src = saved && typeof saved === "object" ? saved : {};
+    return {
+      ...blank,
+      ...src,
+      profile: { ...blank.profile, ...(src.profile || {}) },
+      moduleTimes: { ...blank.moduleTimes, ...(src.moduleTimes || {}) },
+      viewed: { ...blank.viewed, ...(src.viewed || {}) },
+      answers: { ...blank.answers, ...(src.answers || {}) },
+      scores: { ...blank.scores, ...(src.scores || {}) },
+      flags: Array.isArray(src.flags) ? src.flags : [],
+      review: { ...blank.review, ...(src.review || {}) }
+    };
+  }
+
   function loadStudent() {
     try {
       const raw = localStorage.getItem(KEY);
-      if (!raw) return blankStudent();
-      return { ...blankStudent(), ...JSON.parse(raw) };
+      const state = raw ? mergeStudent(JSON.parse(raw)) : blankStudent();
+      if (!state.profile.classCode) {
+        const remembered = rememberedClassCode();
+        if (remembered) state.profile.classCode = remembered;
+      } else {
+        rememberClassCode(state.profile.classCode);
+      }
+      return state;
     } catch {
       return blankStudent();
     }
   }
 
   function saveStudent(state) {
-    localStorage.setItem(KEY, JSON.stringify(state));
-    return state;
+    try {
+      if (state?.profile?.classCode) rememberClassCode(state.profile.classCode);
+      localStorage.setItem(KEY, JSON.stringify(state));
+      return state;
+    } catch (err) {
+      const e = new Error("瀏覽器無法儲存進度，請檢查是否關閉了網站資料。");
+      e.cause = err;
+      throw e;
+    }
   }
 
   function loadTeacher() {
