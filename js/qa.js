@@ -37,6 +37,13 @@
     return ready;
   }
 
+  function extractFn(src, name) {
+    const start = src.indexOf("function " + name + "(");
+    if (start < 0) return "";
+    const next = src.indexOf("\n  function ", start + 10);
+    return next < 0 ? src.slice(start) : src.slice(start, next);
+  }
+
   group("教案內容");
   assert("36 個詞彙", C.vocab.length === 36, C.vocab.length);
   assert("18 個核心詞", C.vocab.filter((v) => v.core).length === 18);
@@ -65,9 +72,12 @@
   assert("量電阻任務要求關電", C.measureTasks[0].expect.power === false && C.measureTasks[0].expect.range === "ohm");
 
   group("計分正確性");
+  assert("DMM_SCORE 有 reviewSuggest", typeof S.reviewSuggest === "function");
   assert("拼寫忽略大小寫", S.matchSpelling("BREADBOARD", ["breadboard"]));
   assert("三用電表接受 DMM", S.matchSpelling("DMM", C.quiz.type1[0].answers));
-  assert("核心詞接受斜線後的中文", S.vocabMatches("數位三用電表", C.vocab[0]));
+  const mm = C.vocab.find((v) => v.id === "multimeter") || C.vocab[0];
+  assert("核心詞接受斜線前的中文", S.vocabMatches("三用電表", mm));
+  assert("核心詞接受斜線後的中文", S.vocabMatches("數位三用電表", mm));
   assert("1 kΩ 換算", S.prefixOk(C.prefixes[0], "1000", "one kilo-ohm"));
   assert("2.2 MΩ 換算", S.prefixOk(C.prefixes[1], "2,200,000", "two point two megaohms"));
   assert("滿分卷為 100%", S.scoreQuiz(perfectQuiz()).pct === 100);
@@ -77,6 +87,7 @@
   const empty = DMM_STORE.blankStudent();
   assert("空白卷不可繳交", S.canSubmit(empty) === false);
   assert("空白卷綜合練習未完成", S.completion(empty).checks.quiz === false);
+  assert("空白卷 overall 不計未作答", S.overall(empty).total === 0);
   const ready = readyStudent();
   assert("完整卷可繳交", S.canSubmit(ready) === true);
   assert("完整卷完成度 100%", S.completion(ready).pct === 100);
@@ -85,29 +96,61 @@
 
   const noSafety = readyStudent();
   noSafety.answers.safetyQuiz = [1, 0, 0];
-  assert("安全未過不可繳交", S.canSubmit(noSafety) === false);
+  assert("安全未達 100 不可繳交", S.canSubmit(noSafety) === false);
   assert("安全未過建議補救", S.reviewSuggest(noSafety).decision === "需補救");
+
+  const noCheckin = readyStudent();
+  noCheckin.profile = { klass: "", number: "", name: "", group: "", classCode: "" };
+  assert("未報到不可繳交", S.canSubmit(noCheckin) === false);
+  assert("繳交門檻需要報到與安全全對", S.canSubmit(noCheckin) === false && S.canSubmit(noSafety) === false && S.canSubmit(ready) === true);
+
+  const noName = readyStudent();
+  noName.profile.name = "";
+  assert("缺姓名會標記 identity", S.qualityFlags(noName).some((f) => f.code === "identity"));
+  assert("缺姓名建議補救", S.reviewSuggest(noName).decision === "需補救");
 
   const liveOhm = readyStudent();
   liveOhm.answers.measure = { doneCount: 3, power: true, range: "ohm" };
   assert("通電量歐姆會標記", S.qualityFlags(liveOhm).some((f) => f.code === "live_ohm"));
   assert("通電量歐姆建議補救", S.reviewSuggest(liveOhm).decision === "需補救");
+  const offOhm = readyStudent();
+  offOhm.answers.measure = { doneCount: 3, power: false, range: "ohm" };
+  assert("關電量歐姆不標 live_ohm", !S.qualityFlags(offOhm).some((f) => f.code === "live_ohm"));
+  const liveVolt = readyStudent();
+  liveVolt.answers.measure = { doneCount: 3, power: true, range: "volt" };
+  assert("通電量電壓不標 live_ohm", !S.qualityFlags(liveVolt).some((f) => f.code === "live_ohm"));
 
   const thin = readyStudent();
   thin.viewed.vocab = { probe: true };
   assert("核心詞看得太少會標記", S.qualityFlags(thin).some((f) => f.code === "vocab_thin"));
 
+  const unsubmittedFast = readyStudent();
+  unsubmittedFast.moduleTimes = { safety: 10000, vocab: 10000, quiz: 10000 };
+  unsubmittedFast.submittedAt = "";
+  assert("未繳交即使很快也不標 too_fast", !S.qualityFlags(unsubmittedFast).some((f) => f.code === "too_fast"));
+  const submittedFast = readyStudent();
+  submittedFast.moduleTimes = { safety: 10000, vocab: 10000, quiz: 10000 };
+  submittedFast.submittedAt = "2026-09-16T10:00:00.000Z";
+  assert("繳交且學習不到 60 秒且綜合高分才標太快", S.qualityFlags(submittedFast).some((f) => f.code === "too_fast"));
+  const submittedSlow = readyStudent();
+  submittedSlow.submittedAt = "2026-09-16T10:00:00.000Z";
+  assert("學習時間足夠不標太快", !S.qualityFlags(submittedSlow).some((f) => f.code === "too_fast"));
+
+  const quizOnly = DMM_STORE.blankStudent();
+  quizOnly.answers.quiz = perfectQuiz();
+  assert("overall 只計已作答區塊", S.overall(quizOnly).total === 32 && S.overall(quizOnly).pct === 100);
+
   const sheet = S.answerSheet(ready);
-  assert("對答案表涵蓋全部綜合題", sheet.length === 32);
+  assert("對答案表長度 32", sheet.length === 32);
   assert("滿分卷對答案全對", sheet.every((item) => item.ok));
 
   group("頁面結構");
   async function pageTests() {
     if (location.protocol === "file:") {
-      assert("請用本機或網站伺服器開啟（file:// 無法審核頁面）", false, location.href);
+      assert("請用本機或網站伺服器開啟（file:// 無法審核頁面，品質閘門未通過）", false, location.href);
       return;
     }
-    const files = ["index.html", "teacher.html", "qa.html", "css/app.css", "js/app.js", "js/teacher.js"];
+    const files = ["index.html", "teacher.html", "qa.html", "css/app.css", "js/app.js", "js/teacher.js", "js/ui.js", "js/score.js"];
     const texts = {};
     for (const file of files) {
       const res = await fetch(file);
@@ -116,6 +159,7 @@
     }
     const student = new DOMParser().parseFromString(texts["index.html"], "text/html");
     const teacher = new DOMParser().parseFromString(texts["teacher.html"], "text/html");
+    const qaDoc = new DOMParser().parseFromString(texts["qa.html"], "text/html");
     assert("學生頁語言 zh-Hant", student.documentElement.lang === "zh-Hant");
     assert("學生頁有 viewport", Boolean(student.querySelector("meta[name=viewport]")));
     assert("學生頁有 #app", Boolean(student.getElementById("app")));
@@ -128,6 +172,16 @@
     assert("主色為工科藍", /--color-primary:\s*#1e4e8c/i.test(texts["css/app.css"]));
     assert("選擇題用 data-qkey 記錄", texts["js/app.js"].includes("data-qkey"));
     assert("教師台在 render 內才抓列表", /function render\(\)[\s\S]*getElementById\("list"\)/.test(texts["js/teacher.js"]));
+    assert("ui.js 提供 escapeHtml", /function escapeHtml\s*\(/.test(texts["js/ui.js"]));
+    const completionSrc = extractFn(texts["js/score.js"], "completion");
+    assert("completion.quiz 使用 quizAttempted", /quiz:\s*quizAttempted\(/.test(completionSrc), "找不到 quiz: quizAttempted");
+    assert("completion.quiz 不是 total>20", completionSrc.includes("quizAttempted") && !/quiz:\s*[^\n]*total\s*>\s*20/.test(completionSrc));
+    assert("品質頁語言 zh-Hant", qaDoc.documentElement.lang === "zh-Hant");
+    assert("品質頁 viewport-fit", /viewport-fit=cover/.test(texts["qa.html"]));
+    assert("品質頁連到學生與教師", texts["qa.html"].includes('href="index.html"') && texts["qa.html"].includes('href="teacher.html"'));
+    assert("品質頁字體與課堂一致", texts["qa.html"].includes("Noto+Sans+TC") && texts["qa.html"].includes("IBM+Plex+Sans"));
+    assert("品質頁不載入 app.js", !texts["qa.html"].includes("js/app.js"));
+    assert("不以 iframe 載入課堂", !/<iframe\b/i.test(texts["qa.html"]));
   }
 
   function render() {
@@ -139,11 +193,12 @@
     });
     const root = document.getElementById("results");
     const gateClass = failed.length ? "fail" : "pass";
+    const headline = failed.length ? "未通過，尚未給學生用" : "品質閘門通過，可以給學生用";
     root.innerHTML = `
       <article class="qa-banner ${gateClass}">
         <div class="kicker">上架品質閘門</div>
-        <h2>${failed.length ? "未通過，請先修好再給學生用" : "品質閘門通過，可以上課堂"}</h2>
-        <p>${out.filter((x) => x.ok).length}/${out.length} 項自動檢查通過${failed.length ? `，失敗 ${failed.length} 項` : ""}。</p>
+        <h2>${headline}</h2>
+        <p>${out.filter((x) => x.ok).length}/${out.length} 項自動檢查通過${failed.length ? `，失敗 ${failed.length} 項。修好前請勿發給學生。` : "。"}</p>
       </article>
       ${Object.entries(grouped).map(([name, items]) => `
         <section class="hero qa-group">
@@ -166,11 +221,13 @@
           <li>學生繳交：未報到或安全未過時按鈕應停用</li>
           <li>聽發音：Chrome／Edge 可讀英文詞</li>
         </ul>
-        <p class="help">自動閘門只保證內容與計分。版面與即時連線仍需用真實瀏覽器點過。</p>
+        <p class="help">自動閘門只保證內容與計分。版面、觸控與即時連線仍需用真實瀏覽器點過。</p>
         <p><a class="btn btn-ghost" href="teacher.html">回審核台</a> <a class="btn btn-ghost" href="index.html">學生課堂</a></p>
       </section>
     `;
-    document.title = failed.length ? `品質檢查失敗 ${failed.length}` : "品質檢查通過";
+    document.title = failed.length
+      ? `尚未給學生用｜品質檢查失敗 ${failed.length}`
+      : "可以給學生用｜品質檢查通過";
     window.DMM_QA = { passed: failed.length === 0, failed: failed.length, total: out.length, results: out };
   }
 
