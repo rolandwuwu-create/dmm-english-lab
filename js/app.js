@@ -571,7 +571,7 @@
         <p class="help">英文工作單：先調電表再按「我完成了」。狀態不符工作單時不會過關。</p>
         <div class="lab">
           <div class="meter" aria-live="polite">
-            <div class="help" style="color:#99f6e4">DIGITAL MULTIMETER</div>
+            <div class="help meter-label">DIGITAL MULTIMETER</div>
             <div class="meter-screen">${esc(reading)}</div>
             <div class="knob-row">
               ${[

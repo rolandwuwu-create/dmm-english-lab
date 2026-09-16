@@ -2,6 +2,13 @@
 
 高雄市立中正高級工業職業學校資訊科吳東儒老師課堂用：三用電表與基本電性量測專業英文。
 
+之後請在這個 GitHub 倉庫改，不要改本機舊資料夾當主版本：
+https://github.com/rolandwuwu-create/dmm-english-lab
+
+- 學生課堂：https://rolandwuwu-create.github.io/dmm-english-lab/
+- 教師審核台：https://rolandwuwu-create.github.io/dmm-english-lab/teacher.html
+- 品質閘門：https://rolandwuwu-create.github.io/dmm-english-lab/qa.html
+
 靜態網頁，不需後端。學生進度存在自己的瀏覽器；繳交可即時送到老師開著的審核台，或下載 JSON 給老師匯入。
 
 ## 學生

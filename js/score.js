@@ -19,9 +19,9 @@
     if (!n) return false;
     const keys = String(item.zh || "")
       .split(/[／、,，]/)
-      .map((s) => norm(s))
+      .map((s) => norm(s).replace(/[()（）].*$/, "").trim())
       .filter((s) => s.length >= 2);
-    return keys.some((k) => n === k || n.includes(k));
+    return keys.some((k) => n === k);
   }
 
   function prefixOk(row, base, say) {

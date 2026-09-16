@@ -78,6 +78,10 @@
   const mm = C.vocab.find((v) => v.id === "multimeter") || C.vocab[0];
   assert("核心詞接受斜線前的中文", S.vocabMatches("三用電表", mm));
   assert("核心詞接受斜線後的中文", S.vocabMatches("數位三用電表", mm));
+  const resistance = C.vocab.find((v) => v.id === "resistance");
+  const resistor = C.vocab.find((v) => v.id === "resistor");
+  assert("電阻器不算電阻", resistance && !S.vocabMatches("電阻器", resistance));
+  assert("電阻器只算電阻器", resistor && S.vocabMatches("電阻器", resistor) && !S.vocabMatches("電阻", resistor));
   assert("1 kΩ 換算", S.prefixOk(C.prefixes[0], "1000", "one kilo-ohm"));
   assert("2.2 MΩ 換算", S.prefixOk(C.prefixes[1], "2,200,000", "two point two megaohms"));
   assert("滿分卷為 100%", S.scoreQuiz(perfectQuiz()).pct === 100);
