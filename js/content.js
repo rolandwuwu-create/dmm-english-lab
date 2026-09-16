@@ -5,86 +5,86 @@ window.DMM_CONTENT = {
     teacher: "吳東儒",
     unitZh: "三用電表與基本電性量測",
     unitEn: "Multimeters and Basic Electrical Measurements",
-    source: "基本電學實習 · 專業英文",
+    source: "基本電學實習 · 專業英文（PVQC 電機與電子類）",
     minutes: 100,
     coreCount: 18,
     totalCount: 36,
     passMark: 70,
-    version: "2026.09.16"
+    version: "2026.09.16.1"
   },
   goals: [
-    "聽懂並執行英文量測指令",
-    "熟練 18 個必學核心詞，能辨識其餘進階詞",
+    "聽懂並依英文工作單完成電阻與電壓量測",
+    "熟練 18 個必學核心詞，能辨識其餘 18 個進階詞",
     "用構詞規則猜 voltmeter、transformer、semiconductor",
-    "完成紙本化 PVQC 六大題型練習"
+    "完成紙本化 PVQC 六大題型，課堂目標 70%"
   ],
   safety: [
     {
       id: "s1",
       en: "Turn off the power supply before you change the wiring.",
       zh: "更改接線前，先關閉電源供應器。",
-      why: "帶電改接線可能短路或觸電。"
+      why: "帶電改接線可能造成短路、元件燒毀或觸電。"
     },
     {
       id: "s2",
       en: "Connect the black lead to COM and the red lead to VΩ.",
-      zh: "黑線接 COM，紅線接 VΩ。",
-      why: "接錯孔會量到錯誤檔位，甚至損壞電表。"
+      zh: "黑表筆接 COM，紅表筆接 VΩ。",
+      why: "插錯孔會量到錯誤檔位；紅表筆誤插 10 A 孔再量電壓，可能熔斷電表保險絲。"
     },
     {
       id: "s3",
       en: "Never measure resistance on a live circuit.",
       zh: "絕不要在通電的電路上量電阻。",
-      why: "歐姆檔會送出測試電流，遇外加電壓會燒表。"
+      why: "歐姆檔會從表內送出測試電流，遇到外加電壓會燒表或熔斷保險絲。"
     },
     {
       id: "s4",
       en: "Do not touch the terminals.",
-      zh: "不要用手碰端子。",
-      why: "端子可能帶電，也會影響讀值。"
+      zh: "量測時不要用手碰端子或裸露導體。",
+      why: "端子可能帶電；人體電阻也會讓讀值失真。"
     }
   ],
   vocab: [
-    { id: "multimeter", en: "multimeter / digital multimeter (DMM)", kk: "[ˋmʌltɪ͵mitɚ] / [ˋdɪdʒɪtl]", zh: "三用電表／數位三用電表", cat: "instruments", core: true },
+    { id: "multimeter", en: "multimeter / digital multimeter (DMM)", kk: "[ˋmʌltɪ͵mitɚ] / [ˋdɪdʒɪtl ˋmʌltɪ͵mitɚ]", zh: "三用電表／數位三用電表", cat: "instruments", core: true },
     { id: "analog", en: "analog multimeter", kk: "[ˋænəlɔg]", zh: "指針式三用電表", cat: "instruments", core: false },
     { id: "probe", en: "probe", kk: "[prob]", zh: "探棒", cat: "instruments", core: true },
-    { id: "testlead", en: "test lead", kk: "[tɛst lid]", zh: "測試線", cat: "instruments", core: false },
+    { id: "testlead", en: "test lead", kk: "[tɛst lid]", zh: "測試線、表筆", cat: "instruments", core: false },
     { id: "alligator", en: "alligator clip", kk: "[ˋælə͵getɚ klɪp]", zh: "鱷魚夾", cat: "instruments", core: false },
     { id: "terminal", en: "terminal", kk: "[ˋtɝmənl]", zh: "端子、接線端", cat: "instruments", core: true },
     { id: "breadboard", en: "breadboard", kk: "[ˋbrɛd͵bord]", zh: "麵包板", cat: "instruments", core: true },
-    { id: "dcpower", en: "DC power supply", kk: "[ˋpaʊɚ səˋplaɪ]", zh: "直流電源供應器", cat: "instruments", core: true },
+    { id: "dcpower", en: "DC power supply", kk: "[di si ˋpaʊɚ səˋplaɪ]", zh: "直流電源供應器、直流電源", cat: "instruments", core: true },
     { id: "jumper", en: "jumper wire", kk: "[ˋdʒʌmpɚ waɪr]", zh: "跳線", cat: "instruments", core: false },
     { id: "voltage", en: "voltage", kk: "[ˋvoltɪdʒ]", zh: "電壓", cat: "quantities", core: true },
-    { id: "volt", en: "volt (V)", kk: "[volt]", zh: "伏特（電壓單位）", cat: "quantities", core: true },
+    { id: "volt", en: "volt (V)", kk: "[volt]", zh: "伏特（電壓單位）、伏特", cat: "quantities", core: true },
     { id: "current", en: "current", kk: "[ˋkɝənt]", zh: "電流", cat: "quantities", core: true },
-    { id: "ampere", en: "ampere / amp (A)", kk: "[ˋæmpɪr]", zh: "安培（電流單位）", cat: "quantities", core: true },
+    { id: "ampere", en: "ampere / amp (A)", kk: "[ˋæmpɪr]", zh: "安培（電流單位）、安培", cat: "quantities", core: true },
     { id: "resistance", en: "resistance", kk: "[rɪˋzɪstəns]", zh: "電阻", cat: "quantities", core: true },
-    { id: "ohm", en: "ohm (Ω)", kk: "[om]", zh: "歐姆（電阻單位）", cat: "quantities", core: true },
+    { id: "ohm", en: "ohm (Ω)", kk: "[om]", zh: "歐姆（電阻單位）、歐姆", cat: "quantities", core: true },
     { id: "power", en: "power", kk: "[ˋpaʊɚ]", zh: "功率", cat: "quantities", core: false },
-    { id: "watt", en: "watt (W)", kk: "[wɑt]", zh: "瓦特（功率單位）", cat: "quantities", core: false },
-    { id: "reading", en: "reading", kk: "[ˋridɪŋ]", zh: "讀值、量測值", cat: "quantities", core: true },
+    { id: "watt", en: "watt (W)", kk: "[wɑt]", zh: "瓦特（功率單位）、瓦特", cat: "quantities", core: false },
+    { id: "reading", en: "reading", kk: "[ˋridɪŋ]", zh: "讀值、量測值、讀數", cat: "quantities", core: true },
     { id: "resistor", en: "resistor", kk: "[rɪˋzɪstɚ]", zh: "電阻器", cat: "components", core: true },
     { id: "capacitor", en: "capacitor", kk: "[kəˋpæsətɚ]", zh: "電容器", cat: "components", core: true },
     { id: "inductor", en: "inductor", kk: "[ɪnˋdʌktɚ]", zh: "電感器", cat: "components", core: false },
     { id: "diode", en: "diode", kk: "[ˋdaɪod]", zh: "二極體", cat: "components", core: true },
-    { id: "led", en: "LED (light-emitting diode)", kk: "[laɪt ɪˋmɪtɪŋ]", zh: "發光二極體", cat: "components", core: false },
+    { id: "led", en: "LED (light-emitting diode)", kk: "[laɪt ɪˋmɪtɪŋ ˋdaɪod]", zh: "發光二極體", cat: "components", core: false },
     { id: "switch", en: "switch", kk: "[swɪtʃ]", zh: "開關", cat: "components", core: false },
-    { id: "fuse", en: "fuse", kk: "[fjuz]", zh: "保險絲", cat: "components", core: false },
-    { id: "pot", en: "potentiometer", kk: "[pə͵tɛnʃɪˋɑmətɚ]", zh: "可變電阻器", cat: "components", core: false },
-    { id: "colorband", en: "color band", kk: "[ˋkʌlɚ bænd]", zh: "色環", cat: "components", core: false },
-    { id: "series", en: "series circuit", kk: "[ˋsɪriz ˋsɝkɪt]", zh: "串聯電路", cat: "circuits", core: true },
-    { id: "parallel", en: "parallel circuit", kk: "[ˋpærə͵lɛl]", zh: "並聯電路", cat: "circuits", core: true },
-    { id: "short", en: "short circuit", kk: "[ʃɔrt]", zh: "短路", cat: "circuits", core: true },
-    { id: "open", en: "open circuit", kk: "[ˋopən]", zh: "斷路、開路", cat: "circuits", core: false },
-    { id: "ground", en: "ground", kk: "[graʊnd]", zh: "接地", cat: "circuits", core: false },
+    { id: "fuse", en: "fuse", kk: "[fjuz]", zh: "保險絲、熔絲", cat: "components", core: false },
+    { id: "pot", en: "potentiometer", kk: "[pə͵tɛnʃɪˋɑmətɚ]", zh: "可變電阻器、電位器", cat: "components", core: false },
+    { id: "colorband", en: "color band", kk: "[ˋkʌlɚ bænd]", zh: "色環、色碼", cat: "components", core: false },
+    { id: "series", en: "series circuit", kk: "[ˋsɪriz ˋsɝkɪt]", zh: "串聯電路、串聯", cat: "circuits", core: true },
+    { id: "parallel", en: "parallel circuit", kk: "[ˋpærə͵lɛl ˋsɝkɪt]", zh: "並聯電路、並聯", cat: "circuits", core: true },
+    { id: "short", en: "short circuit", kk: "[ʃɔrt ˋsɝkɪt]", zh: "短路", cat: "circuits", core: true },
+    { id: "open", en: "open circuit", kk: "[ˋopən ˋsɝkɪt]", zh: "斷路、開路", cat: "circuits", core: false },
+    { id: "ground", en: "ground", kk: "[graʊnd]", zh: "接地、地線", cat: "circuits", core: false },
     { id: "load", en: "load", kk: "[lod]", zh: "負載", cat: "circuits", core: false },
     { id: "polarity", en: "polarity", kk: "[poˋlærətɪ]", zh: "極性", cat: "circuits", core: false },
-    { id: "continuity", en: "continuity", kk: "[͵kɑntəˋnjuətɪ]", zh: "導通（測試）", cat: "circuits", core: false },
+    { id: "continuity", en: "continuity", kk: "[͵kɑntəˋnjuətɪ]", zh: "導通（測試）、導通測試", cat: "circuits", core: false },
     { id: "schematic", en: "schematic", kk: "[skiˋmætɪk]", zh: "電路圖", cat: "circuits", core: false }
   ],
   categories: {
     instruments: "量測儀器 Instruments",
-    quantities: "電性量與單位 Quantities",
+    quantities: "電性量與單位 Quantities & Units",
     components: "電子元件 Components",
     circuits: "電路與連接 Circuits"
   },
@@ -127,14 +127,14 @@ window.DMM_CONTENT = {
   ],
   quiz: {
     type1: [
-      { zh: "三用電表", answers: ["multimeter", "digital multimeter", "dmm"] },
+      { zh: "三用電表", answers: ["multimeter", "digital multimeter", "dmm", "multi meter", "digital multi meter"] },
       { zh: "電阻器", answers: ["resistor"] },
       { zh: "電容器", answers: ["capacitor"] },
-      { zh: "探棒", answers: ["probe"] },
+      { zh: "探棒", answers: ["probe", "probes", "test probe"] },
       { zh: "電壓", answers: ["voltage"] },
       { zh: "電流", answers: ["current"] },
       { zh: "串聯電路", answers: ["series circuit", "series"] },
-      { zh: "麵包板", answers: ["breadboard"] }
+      { zh: "麵包板", answers: ["breadboard", "bread board"] }
     ],
     type2: [
       { stem: "inductor", options: ["電容器", "電感器", "電阻器", "二極體"], answer: 1 },
@@ -195,8 +195,8 @@ window.DMM_CONTENT = {
     }
   ],
   safetyQuiz: [
-    { q: "量電阻前應該？", options: ["先把電源關掉", "先把電源開到最大", "先用手碰端子"], answer: 0 },
-    { q: "紅表筆應接到？", options: ["COM", "VΩ", "接地螺絲"], answer: 1 },
-    { q: "電路還在通電時，可以量歐姆檔嗎？", options: ["可以，比較準", "不行，會損壞電表", "只能量 1 秒"], answer: 1 }
+    { q: "量電阻（歐姆檔）前，正確程序是？", options: ["先關閉電源供應器，並確認電路沒有外加電壓", "先把電源調到 5 V，讀值會比較穩定", "先轉到電流檔，確認有電流再量電阻"], answer: 0 },
+    { q: "量電壓或電阻時，紅表筆應插入哪一個孔？", options: ["COM（公共端）", "VΩ（電壓／歐姆）", "10 A（大電流孔）"], answer: 1 },
+    { q: "電路仍在通電時，可以使用歐姆檔嗎？", options: ["可以，讀值會比較接近標稱值", "不行，外加電壓會損壞電表或熔斷保險絲", "可以，只要先轉到最高歐姆檔再量"], answer: 1 }
   ]
 };
