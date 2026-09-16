@@ -2,14 +2,43 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>品質檢查｜DMM English Lab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1E4E8C">
+  <title>品質檢查進行中｜尚未給學生用</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/app.css">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <main id="results" style="padding:1rem"></main>
-  <p class="footer-note"><a href="teacher.html">回審核台</a></p>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 5 3.5 7.5 7 9 3.5-1.5 7-4 7-9V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <div>
+          <h1>產品品質閘門</h1>
+          <p>自動檢查全部通過，才能給學生用</p>
+        </div>
+      </div>
+      <nav aria-label="相關頁面" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-left:auto">
+        <a class="btn btn-ghost" href="index.html">學生課堂</a>
+        <a class="btn btn-ghost" href="teacher.html">教師審核台</a>
+      </nav>
+    </header>
+    <main id="results">
+      <article class="qa-banner">
+        <div class="kicker">上架品質閘門</div>
+        <h2>檢查進行中…</h2>
+        <p>通過前請勿把課堂連結發給學生。</p>
+      </article>
+    </main>
+    <p class="footer-note">
+      <span>高雄市立中正高工　資訊科　吳東儒</span>
+      <span>此頁不載入學生課堂腳本，避免寫入課堂 localStorage。</span>
+    </p>
+  </div>
   <script src="js/content.js"></script>
   <script src="js/store.js"></script>
   <script src="js/score.js"></script>
