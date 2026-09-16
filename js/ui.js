@@ -3,7 +3,7 @@
     meter: "M3 12a9 9 0 1 0 18 0A9 9 0 0 0 3 12Zm9-4v4l3 2",
     book: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5V6.5A2.5 2.5 0 0 1 6.5 4H20v13H6.5A2.5 2.5 0 0 0 4 19.5Z",
     check: "m5 12 5 5L20 7",
-    user: "M20 21a8 8 0 0 0-16 0M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",
+    user: "M20 21a8 8 0 0 0-16 0M12 11a4 4 0 1 0 0-8 4 4 0 0 0 8Z",
     home: "M4 10.5 12 4l8 6.5V20H4V10.5Z",
     send: "M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z",
     shield: "M12 3 5 6v6c0 5 3.5 7.5 7 9 3.5-1.5 7-4 7-9V6l-7-3Z",
@@ -14,6 +14,22 @@
     upload: "M12 21V9m0 0 4 4m-4-4-4 4M5 3h14",
     search: "m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15Z",
     alert: "M12 9v4m0 4h.01M10.3 4.2 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0Z"
+  };
+
+  const MODULE_ZH = {
+    home: "首頁",
+    checkin: "報到",
+    hub: "學習地圖",
+    safety: "安全口令",
+    vocab: "核心詞彙",
+    wordfamily: "構詞解碼",
+    units: "單位換算",
+    circuit: "電路判讀",
+    measure: "英文工作單",
+    dialogue: "量測對話",
+    challenge: "進階挑戰",
+    quiz: "綜合練習",
+    submit: "繳交與審核"
   };
 
   function icon(name, size = 20) {
@@ -41,5 +57,13 @@
     })[c]);
   }
 
-  global.DMM_UI = { icon, speak, escapeHtml };
+  function escapeAttr(s) {
+    return escapeHtml(s);
+  }
+
+  function moduleLabel(key) {
+    return MODULE_ZH[key] || String(key || "");
+  }
+
+  global.DMM_UI = { icon, speak, escapeHtml, escapeAttr, moduleLabel };
 })(window);
