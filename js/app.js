@@ -17,21 +17,43 @@
 
   let measureFail = null;
 
+  const PATH = ["checkin", "safety", "vocab", "wordfamily", "units", "circuit", "measure", "dialogue", "challenge", "quiz", "submit"];
+
   const params = new URLSearchParams(location.search);
   const urlClass = String(params.get("class") || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
   if (urlClass && urlClass !== state.profile.classCode) {
     state.profile.classCode = urlClass;
     persist();
   }
+  const urlInbox = String(params.get("inbox") || "").trim();
+  if (urlInbox && urlInbox !== state.profile.inboxUrl) {
+    state.profile.inboxUrl = urlInbox;
+    persist();
+  }
 
   function persist() {
     try {
       state = saveStudent(state);
+      const el = document.getElementById("saveState");
+      if (el) el.textContent = "已自動儲存";
     } catch (err) {
+      const el = document.getElementById("saveState");
+      if (el) el.textContent = "儲存失敗";
       toast(err.message || "無法儲存進度");
     }
     header();
     return state;
+  }
+
+  function nextMod(from) {
+    const i = PATH.indexOf(from);
+    return PATH[Math.min(i + 1, PATH.length - 1)];
+  }
+
+  function nextBar() {
+    if (view === "submit" || view === "home") return "";
+    const n = nextMod(view);
+    return `<div class="next-bar"><button class="btn btn-primary" type="button" data-go="${n}">下一關：${esc(UI.moduleLabel(n))}</button></div>`;
   }
 
   function toast(msg) {
@@ -125,7 +147,7 @@
 
   function layout(inner) {
     header();
-    app.innerHTML = inner;
+    app.innerHTML = inner + nextBar();
     app.querySelectorAll("[data-say]").forEach((b) => {
       b.onclick = () => say(b.dataset.say);
     });
@@ -212,35 +234,29 @@
 
   function home() {
     const code = state.profile.classCode || "";
+    const resume = isCheckedIn() ? "hub" : "checkin";
     layout(`
-      <section class="hero-grid">
-        <article class="hero">
-          <div class="kicker">${esc(C.meta.school)} · ${esc(C.meta.dept)}</div>
-          <h2>${esc(C.meta.unitZh)}</h2>
-          <p>${esc(C.meta.unitEn)}　教師 ${esc(C.meta.teacher)}　建議 ${esc(C.meta.minutes)} 分鐘</p>
-          <ul class="goal-list">
-            ${C.goals.map((g) => `<li>${UI.icon("check", 18)}<span>${esc(g)}</span></li>`).join("")}
-          </ul>
-          <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-            <button class="btn btn-primary" type="button" data-go="checkin">開始／繼續上課</button>
-            <button class="btn btn-ghost" type="button" data-go="hub">學習地圖</button>
-          </div>
-        </article>
-        <aside class="hero">
-          <strong>課堂怎麼用</strong>
-          <p class="help">1. 報到　2. 安全口令　3. 依地圖完成任務　4. 繳交後等老師審核。英文指令請按「聽」自己跟讀，不必等老師唸。</p>
-          <p class="help">課堂代碼：<b>${code ? esc(code) : "請輸入老師公布的代碼"}</b></p>
-          <form class="form" id="classCodeForm">
-            <label>課堂代碼
-              <input id="classCode" name="classCode" value="${attr(code)}" maxlength="8" autocomplete="off" enterkeyhint="done">
-            </label>
-            <button class="btn btn-accent" type="submit" id="saveCode">記住代碼</button>
-          </form>
-        </aside>
-      </section>
+      <article class="hero">
+        <div class="kicker">${esc(C.meta.school)} · ${esc(C.meta.dept)} · ${esc(C.meta.teacher)}</div>
+        <h2>三用電表英文課</h2>
+        <p class="help">這堂課照順序做就好。你打的每一格都會自動存進這支手機／電腦，關掉網頁再打開還在。</p>
+        <ol class="step-list">
+          <li><strong>1. 報到</strong>　填班級、學號、姓名</li>
+          <li><strong>2. 一關一關做</strong>　安全 → 詞彙 → 量測 → 練習</li>
+          <li><strong>3. 交給老師</strong>　老師會看到你寫的答案並打分數</li>
+        </ol>
+        <form class="form" id="classCodeForm">
+          <label>老師公布的課堂代碼
+            <input id="classCode" name="classCode" value="${attr(code)}" maxlength="8" autocomplete="off" placeholder="例如 6 個英數字">
+          </label>
+          <button class="btn btn-primary" type="submit">${isCheckedIn() ? "繼續上課" : "開始報到"}</button>
+        </form>
+      </article>
     `);
     bindGradeForm("classCodeForm", () => {
-      if (saveClassCode(document.getElementById("classCode").value)) home();
+      const raw = document.getElementById("classCode").value;
+      if (raw && !saveClassCode(raw)) return;
+      enter(resume);
     });
   }
 
@@ -248,15 +264,16 @@
     const p = state.profile;
     layout(`
       <article class="hero">
-        <div class="kicker">報到</div>
-        <h2>先讓老師認得出你</h2>
+        <div class="kicker">第 1 關</div>
+        <h2>先填你是誰</h2>
+        <p class="help">填完會自動記住。老師靠班級＋學號對答案、打分數。</p>
         <form class="form" id="checkinForm">
           <label>班級 <input name="klass" required value="${attr(p.klass)}" placeholder="例如 資一甲" autocomplete="organization"></label>
           <label>學號 <input name="number" required value="${attr(p.number)}" inputmode="numeric" autocomplete="off"></label>
           <label>姓名 <input name="name" required value="${attr(p.name)}" autocomplete="name"></label>
-          <label>組別 <input name="group" value="${attr(p.group)}" placeholder="選填" autocomplete="off"></label>
-          <label>課堂代碼 <input name="classCode" value="${attr(p.classCode)}" placeholder="老師公布的 6 碼" maxlength="8" autocomplete="off"></label>
-          <button class="btn btn-primary" type="submit">進入學習地圖</button>
+          <label>組別（可空白） <input name="group" value="${attr(p.group)}" autocomplete="off"></label>
+          <label>課堂代碼 <input name="classCode" value="${attr(p.classCode)}" placeholder="老師寫在黑板上的代碼" maxlength="8" autocomplete="off"></label>
+          <button class="btn btn-primary" type="submit">存好，下一關</button>
         </form>
       </article>
     `);
@@ -275,11 +292,12 @@
         number,
         name,
         group: String(fd.get("group") || "").trim(),
-        classCode: String(fd.get("classCode") || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8)
+        classCode: String(fd.get("classCode") || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8),
+        inboxUrl: state.profile.inboxUrl || ""
       };
       persist();
-      toast("報到完成");
-      enter("hub");
+      toast("已自動儲存，進入下一關");
+      enter("safety");
     };
   }
 
@@ -287,34 +305,41 @@
     const c = S.completion(state);
     const o = S.overall(state);
     const items = [
-      ["checkin", "報到", "班級、學號、姓名", c.checks.checkin],
-      ["safety", "安全口令", "先過這關才能量測", c.checks.safety],
-      ["vocab", "核心詞彙", "18 個必學＋18 個進階", c.checks.vocab],
-      ["wordfamily", "構詞解碼", "resistor / resistance / resistive", c.checks.wordfamily],
-      ["units", "單位換算", "kilo / mega / milli / micro", c.checks.units],
-      ["circuit", "電路判讀", "series / parallel / short", c.checks.circuit],
-      ["measure", "英文工作單", "關電、檔位、探棒、讀值", c.checks.measure],
-      ["dialogue", "量測對話", "聽、跟讀、寫中文", false],
-      ["challenge", "進階挑戰", "沒教過的三個詞", false],
-      ["quiz", "綜合練習", "PVQC 六大題型紙本化", c.checks.quiz],
-      ["submit", "繳交與審核", "回傳學習紀錄給老師", false]
+      ["checkin", "1. 報到", "班級、學號、姓名", c.checks.checkin],
+      ["safety", "2. 安全口令", "三題全對再去量測", c.checks.safety],
+      ["vocab", "3. 核心詞彙", "看卡片、寫中文", c.checks.vocab],
+      ["wordfamily", "4. 構詞", "resistor / resistance", c.checks.wordfamily],
+      ["units", "5. 單位換算", "kilo / milli", c.checks.units],
+      ["circuit", "6. 電路判讀", "串聯或並聯", c.checks.circuit],
+      ["measure", "7. 量測工作單", "轉檔位、讀電表", c.checks.measure],
+      ["dialogue", "8. 量測對話", "聽英文、寫中文", Boolean((state.answers.dialogue || []).filter(Boolean).length)],
+      ["challenge", "9. 進階三詞", "用規則猜意思", Boolean((state.answers.challenge || []).filter(Boolean).length)],
+      ["quiz", "10. 綜合練習", "給老師打分數的主卷", c.checks.quiz],
+      ["submit", "11. 交給老師", "送出你寫過的全部答案", Boolean(state.submittedAt)]
     ];
+    const firstTodo = items.find((row) => !row[3] && row[0] !== "submit") || items[items.length - 1];
     layout(`
       <section class="grid grid-3" style="margin-bottom:1rem">
-        <div class="stat" style="padding:1rem"><div class="help">地圖完成度</div><strong>${c.pct}%</strong></div>
-        <div class="stat" style="padding:1rem"><div class="help">目前得分</div><strong>${o.pct}%</strong><div class="help">${o.right}/${o.total}</div></div>
-        <div class="stat" style="padding:1rem"><div class="help">審核狀態</div><strong>${esc(state.review.status)}</strong><div class="help">${esc(state.review.note || "尚未回傳")}</div></div>
+        <div class="stat" style="padding:1rem"><div class="help">完成</div><strong>${c.pct}%</strong></div>
+        <div class="stat" style="padding:1rem"><div class="help">目前得分</div><strong>${o.pct}%</strong></div>
+        <div class="stat" style="padding:1rem"><div class="help">老師審核</div><strong>${esc(state.review.status)}</strong></div>
       </section>
       ${checkinBanner()}
-      <section class="grid grid-2">
+      <p class="help">從第 1 關做到第 11 關。每一格打完就會自動存。</p>
+      <div style="margin-bottom:1rem">
+        <button class="btn btn-primary" type="button" data-go="${firstTodo[0]}">接著做：${esc(firstTodo[1])}</button>
+      </div>
+      <ol class="step-list">
         ${items.map(([id, title, meta, done]) => `
-          <button class="module-card ${done ? "done" : ""}" type="button" data-go="${id}">
-            <div><span class="badge ${done ? "badge-ok" : "badge-core"}">${done ? "已完成" : "進行中"}</span></div>
-            <strong>${esc(title)}</strong>
-            <div class="meta">${esc(meta)}</div>
-          </button>
+          <li>
+            <button class="module-card ${done ? "done" : ""}" type="button" data-go="${id}">
+              <div><span class="badge ${done ? "badge-ok" : "badge-core"}">${done ? "已完成" : "還沒做"}</span></div>
+              <strong>${esc(title)}</strong>
+              <div class="meta">${esc(meta)}</div>
+            </button>
+          </li>
         `).join("")}
-      </section>
+      </ol>
     `);
   }
 
@@ -802,27 +827,28 @@
     const flags = S.qualityFlags(state);
     const ready = S.canSubmit(state);
     const suggest = S.reviewSuggest(state);
+    const work = S.writtenWork(state);
+    const filled = work.filter((r) => String(r.given || "").trim()).length;
     layout(`
       <article class="hero">
-        <h2>繳交學習紀錄</h2>
+        <div class="kicker">第 11 關</div>
+        <h2>把你寫的交給老師打分數</h2>
         ${checkinBanner()}
-        <p>完成度 ${c.pct}%　得分 ${o.pct}%　審核：${esc(state.review.status)}</p>
+        <p>已自動儲存在這台裝置。下面再送到老師那裡，老師會看到每一題你寫了什麼。</p>
+        <p>完成 ${c.pct}%　系統得分 ${o.pct}%　已寫 ${filled} 格　審核：${esc(state.review.status)}</p>
         <div class="verdict ${suggest.decision === "通過" ? "pass" : suggest.decision === "需補救" ? "fail" : "warn"}">
-          <strong>繳交前預檢：${esc(suggest.decision)}</strong>
+          <strong>系統預檢：${esc(suggest.decision)}</strong>
           <p class="help">${esc(suggest.reason)}</p>
         </div>
-        <ul class="goal-list">
-          ${Object.entries(c.checks).map(([k, v]) => `<li>${v ? UI.icon("check") : UI.icon("alert")}<span>${esc(zh(k))} ${v ? "通過" : "未完成"}</span></li>`).join("")}
-        </ul>
-        ${flags.length ? `<p class="help">品質標記：${flags.map((f) => esc(f.detail)).join("、")}</p>` : `<p class="help">未發現明顯異常。</p>`}
-        ${ready ? "" : `<p class="error">至少要完成報到、安全過關，且地圖完成度達 60% 才能繳交。</p>`}
+        ${ready ? "" : `<p class="error">請先填班級、學號、姓名，老師才知道這份是誰的。</p>`}
         <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-          <button class="btn btn-primary" type="button" id="sendNow" ${ready ? "" : "disabled"}>即時送給老師</button>
-          <button class="btn btn-ghost" type="button" id="dl">下載繳交檔</button>
+          <button class="btn btn-primary" type="button" id="sendNow" ${ready ? "" : "disabled"}>交給老師打分數</button>
+          <button class="btn btn-ghost" type="button" id="dl">下載我的作答檔</button>
         </div>
-        <p id="subMsg" class="help">${state.submittedAt ? `上次繳交 ${esc(state.submittedAt)}` : ""}</p>
+        <p id="subMsg" class="help">${state.submittedAt ? `上次交給老師 ${esc(state.submittedAt)}` : "還沒交給老師。寫過的內容已自動存在這台裝置。"}</p>
       </article>
     `);
+    const submittedAt = new Date().toISOString();
     const payload = {
       type: "submit",
       student: {
@@ -830,7 +856,9 @@
         flags,
         completion: c,
         overall: o,
-        submittedAt: new Date().toISOString()
+        work,
+        gradeRow: S.gradeRow(state),
+        submittedAt
       }
     };
     document.getElementById("dl").onclick = () => {
@@ -840,34 +868,53 @@
       }
       const num = String(state.profile.number || "student").replace(/[^\w\u4e00-\u9fff-]/g, "") || "student";
       DMM_SYNC.downloadJson(`${num}-dmm.json`, payload.student);
-      toast("已下載，交給老師匯入");
+      toast("已下載作答檔，傳給老師即可打分數");
     };
     document.getElementById("sendNow").onclick = async () => {
       const btn = document.getElementById("sendNow");
       if (!S.canSubmit(state)) {
-        toast("尚未達到繳交條件");
+        toast("請先填班級、學號、姓名");
         return;
       }
       btn.disabled = true;
       btn.textContent = "傳送中…";
-      try {
-        if (!state.profile.classCode) throw new Error("尚未填課堂代碼");
-        const sent = await DMM_SYNC.connectStudent(state.profile.classCode, payload);
-        state.submittedAt = payload.student.submittedAt;
-        state.submitChannel = "live";
-        state.review = sent.ack?.review
-          ? { ...state.review, ...sent.ack.review }
-          : { ...state.review, status: "待審核" };
+      const sent = [];
+      const errors = [];
+      if (state.profile.inboxUrl) {
+        try {
+          await DMM_SYNC.postInbox(state.profile.inboxUrl, payload);
+          sent.push("試算表");
+        } catch (err) {
+          errors.push(err.message || "試算表失敗");
+        }
+      }
+      if (state.profile.classCode) {
+        try {
+          const live = await DMM_SYNC.connectStudent(state.profile.classCode, payload);
+          state.review = live.ack?.review
+            ? { ...state.review, ...live.ack.review }
+            : { ...state.review, status: "待審核" };
+          sent.push("老師電腦");
+        } catch (err) {
+          errors.push(err.message || "即時送出失敗");
+        }
+      } else {
+        errors.push("沒有課堂代碼，無法即時送到老師電腦");
+      }
+      const box = document.getElementById("subMsg");
+      if (sent.length) {
+        state.submittedAt = submittedAt;
+        state.submitChannel = sent.join("+");
         persist();
-        document.getElementById("subMsg").textContent = "已送到老師端。老師批改後，可再繳交一次以更新狀態。";
-        toast("繳交成功");
-      } catch (err) {
-        const msg = `${err.message || err} 請改下載繳交檔。`;
-        const box = document.getElementById("subMsg");
-        if (box) box.textContent = msg;
-        toast(String(err.message || err));
+        if (box) box.textContent = `已交給老師（${sent.join("、")}）。老師可以在審核台或試算表打分數。`;
+        toast("已交給老師");
+        btn.textContent = "再交一次";
         btn.disabled = false;
-        btn.textContent = "即時送給老師";
+      } else {
+        if (box) box.textContent = `${errors.join(" ")} 請改按「下載我的作答檔」傳給老師。`;
+        toast("即時送出失敗，請下載作答檔");
+        btn.disabled = false;
+        btn.textContent = "交給老師打分數";
       }
     };
   }
@@ -898,6 +945,12 @@
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) persist();
   });
+  window.addEventListener("beforeunload", () => {
+    try { saveStudent(state); } catch (_) { /* ignore */ }
+  });
+
+  if (!isCheckedIn()) view = "checkin";
+  else view = "hub";
 
   render();
 })();

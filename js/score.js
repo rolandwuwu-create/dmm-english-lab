@@ -199,8 +199,117 @@
   }
 
   function canSubmit(state) {
+    return Boolean(state.profile?.name && state.profile?.number && state.profile?.klass);
+  }
+
+  function writtenWork(state) {
+    const content = C();
+    const a = state.answers || {};
+    const rows = [];
+    content.vocab.filter((v) => v.core).forEach((v) => {
+      const given = a.vocabZh?.[v.id] || "";
+      rows.push({
+        section: "核心詞彙",
+        prompt: v.en,
+        given,
+        expected: String(v.zh || "").split(/[／、]/)[0],
+        ok: vocabMatches(given, v)
+      });
+    });
+    content.wordFamily.forEach((row, i) => {
+      ["or", "ance", "ive"].forEach((k) => {
+        if (row.given.includes(k)) return;
+        const given = a.wordFamily?.[i]?.[k] || "";
+        rows.push({
+          section: "構詞",
+          prompt: `${row.root} → ${k}`,
+          given,
+          expected: row[k],
+          ok: norm(given) === norm(row[k])
+        });
+      });
+    });
+    content.prefixes.forEach((row, i) => {
+      const given = [a.prefixes?.[i]?.base, a.prefixes?.[i]?.say].filter(Boolean).join(" / ");
+      rows.push({
+        section: "單位",
+        prompt: row.given,
+        given,
+        expected: `${row.base}；${row.say}`,
+        ok: prefixOk(row, a.prefixes?.[i]?.base, a.prefixes?.[i]?.say)
+      });
+    });
+    content.circuits.forEach((row, i) => {
+      const given = a.circuits?.[i] || "";
+      rows.push({
+        section: "電路",
+        prompt: row.q,
+        given,
+        expected: row.answer,
+        ok: given === row.answer
+      });
+    });
+    content.dialogue.forEach((row, i) => {
+      const given = a.dialogue?.[i] || "";
+      rows.push({
+        section: "對話",
+        prompt: row.en,
+        given,
+        expected: row.zh,
+        ok: Boolean(given.replace(/\s/g, "")) && given.replace(/\s/g, "").includes(row.zh.slice(0, 4))
+      });
+    });
+    content.challenge.forEach((row, i) => {
+      const given = a.challenge?.[i] || "";
+      rows.push({
+        section: "挑戰",
+        prompt: row.en,
+        given,
+        expected: row.zh,
+        ok: given.includes(row.zh.replace("器", ""))
+      });
+    });
+    content.safetyQuiz.forEach((row, i) => {
+      const idx = a.safetyQuiz?.[i];
+      rows.push({
+        section: "安全",
+        prompt: row.q,
+        given: idx === undefined || idx === "" ? "" : row.options[idx],
+        expected: row.options[row.answer],
+        ok: Number(idx) === row.answer
+      });
+    });
+    return rows;
+  }
+
+  function gradeRow(state) {
+    const work = writtenWork(state);
+    const pack = (section) => work
+      .filter((r) => r.section === section)
+      .map((r) => `${r.prompt}＝${r.given || "未作"}`)
+      .join("；");
+    const quiz = answerSheet(state);
+    const o = overall(state);
     const c = completion(state);
-    return c.checks.checkin && c.checks.safety && c.pct >= 60;
+    return {
+      klass: state.profile?.klass || "",
+      number: state.profile?.number || "",
+      name: state.profile?.name || "",
+      group: state.profile?.group || "",
+      completion: c.pct,
+      score: o.pct,
+      quiz: scoreQuiz(state.answers?.quiz || {}).pct,
+      safety: scoreSafety(state.answers?.safetyQuiz || {}).pct,
+      vocab: pack("核心詞彙"),
+      wordFamily: pack("構詞"),
+      units: pack("單位"),
+      circuits: pack("電路"),
+      dialogue: pack("對話"),
+      challenge: pack("挑戰"),
+      safetyAnswers: pack("安全"),
+      quizType1: quiz.filter((x) => x.type === "題型一").map((x) => `${x.stem}＝${x.given || "未作"}`).join("；"),
+      quizChoice: quiz.filter((x) => x.type !== "題型一").map((x) => `${x.type} ${x.stem}＝${x.given}`).join("；")
+    };
   }
 
   function answerSheet(state) {
@@ -257,6 +366,6 @@
   global.DMM_SCORE = {
     norm, matchSpelling, vocabMatches, prefixOk, scoreQuiz, quizAttempted,
     scoreWordFamily, scorePrefixes, scoreCircuits, scoreChallenge, scoreSafety,
-    scoreVocab, qualityFlags, completion, overall, canSubmit, answerSheet, reviewSuggest
+    scoreVocab, qualityFlags, completion, overall, canSubmit, answerSheet, reviewSuggest, writtenWork, gradeRow
   };
 })(window);

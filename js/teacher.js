@@ -191,6 +191,31 @@
     URL.revokeObjectURL(a.href);
   }
 
+  function exportAnswersCsv() {
+    const rows = [["班級", "學號", "姓名", "分區", "題目", "學生作答", "參考答案", "對錯"]];
+    students().forEach((s) => {
+      S.writtenWork(s).forEach((item) => {
+        rows.push([
+          s.profile?.klass, s.profile?.number, s.profile?.name,
+          item.section, item.prompt, item.given, item.expected, item.ok ? "對" : "錯"
+        ]);
+      });
+      S.answerSheet(s).forEach((item) => {
+        rows.push([
+          s.profile?.klass, s.profile?.number, s.profile?.name,
+          item.type, item.stem, item.given, item.expected, item.ok ? "對" : "錯"
+        ]);
+      });
+    });
+    const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `dmm-answers-${t.classCode || "export"}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
   async function copyText(text) {
     if (!text) return false;
     if (navigator.clipboard && window.isSecureContext) {
@@ -331,7 +356,7 @@
     const avgEl = document.getElementById("avg");
     const recvEl = document.getElementById("recvState");
     if (codeView) codeView.textContent = t.classCode || "尚未開課";
-    if (join) join.value = t.classCode ? DMM_SYNC.joinUrl(t.classCode) : "";
+    if (join) join.value = t.classCode ? DMM_SYNC.joinUrl(t.classCode, t.inboxUrl) : "";
     if (countEl) countEl.textContent = `${all.length} 份繳交`;
     const pending = all.filter((s) => statusOf(s._id) === "待審核").length;
     if (pendingEl) pendingEl.textContent = `${pending} 待審核`;
@@ -417,7 +442,16 @@
           const cls = BLOCK_CODES.has(f.code) ? "badge-bad" : "badge-warn";
           return `<span class="badge ${cls}">${esc(f.detail)}</span>`;
         }).join(" ") || "無"}</p>
-        <h3>任務勾選</h3>
+        <h3>學生作答（拿來打分數）</h3>
+        <p class="help">下面是學生實際寫下的內容。可匯出「作答明細 CSV」用 Excel 批改。</p>
+        <div class="table-wrap">
+          ${(S.writtenWork(s).length ? S.writtenWork(s) : []).slice(0, sheetExpanded ? 999 : 12).map((item) => `
+            <div class="answer-row ${item.ok ? "" : "wrong"}">
+              <span>${esc(item.section)}　${esc(item.prompt)}</span>
+              <span>作答：${esc(item.given || "未作")}${item.ok ? "（對）" : `／應為：${esc(item.expected)}`}</span>
+            </div>
+          `).join("")}
+        </div>
         <ul class="goal-list">
           ${Object.entries(s.completion?.checks || {}).map(([k, v]) => `<li><span>${v ? "完成" : "缺"}　${esc(CHECK_LABELS[k] || k)}</span></li>`).join("")}
         </ul>
@@ -485,12 +519,17 @@
         <label>學生連結（可投影給學生抄）
           <input id="joinUrl" readonly>
         </label>
+        <label>Google 試算表收件網址（選填，貼上 /exec）
+          <input id="inboxUrl" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(t.inboxUrl || "")}">
+        </label>
+        <p class="help">學生按「交給老師」後，作答會進審核台；若有貼收件網址，也會寫進試算表方便用 Excel 打分數。</p>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap">
           <button type="button" class="btn btn-primary" id="start">開始收件</button>
           <button type="button" class="btn btn-ghost" id="newCode">換新代碼</button>
           <button type="button" class="btn btn-ghost" id="copyCode">複製代碼</button>
           <button type="button" class="btn btn-ghost" id="copy">複製連結</button>
-          <button type="button" class="btn btn-ghost" id="csv">匯出 CSV</button>
+          <button type="button" class="btn btn-ghost" id="csv">匯出成績 CSV</button>
+          <button type="button" class="btn btn-accent" id="answers">匯出作答明細 CSV</button>
           <label class="btn btn-ghost">匯入 JSON<input id="file" type="file" accept="application/json,.json" multiple class="sr-only"></label>
           <button type="button" class="btn btn-ghost" id="logout">離開審核台</button>
           <a class="btn btn-ghost" href="qa.html">品質閘門</a>
@@ -539,6 +578,13 @@
       toast(ok ? "已複製課堂代碼" : "無法複製，請看上方代碼自行抄寫");
     };
     document.getElementById("csv").onclick = exportCsv;
+    document.getElementById("answers").onclick = exportAnswersCsv;
+    document.getElementById("inboxUrl").onchange = () => {
+      t.inboxUrl = document.getElementById("inboxUrl").value.trim();
+      persist();
+      render();
+      toast("已記住試算表收件網址");
+    };
     document.getElementById("logout").onclick = logout;
     document.getElementById("file").onchange = async (e) => {
       const files = [...(e.target.files || [])];

@@ -111,17 +111,27 @@
     URL.revokeObjectURL(url);
   }
 
-  function joinUrl(code) {
+  function joinUrl(code, inbox) {
     const url = new URL(location.href);
     url.hash = "";
-    url.search = `?class=${encodeURIComponent(code)}`;
-    if (!url.pathname.endsWith(".html")) {
-      /* student index */
-    } else {
+    url.search = "";
+    url.searchParams.set("class", String(code || "").toUpperCase());
+    if (inbox) url.searchParams.set("inbox", String(inbox));
+    if (url.pathname.endsWith(".html")) {
       url.pathname = url.pathname.replace(/teacher\.html|qa\.html/i, "index.html");
     }
-    return url.toString().replace(/teacher\.html/i, "index.html");
+    return url.toString();
   }
 
-  global.DMM_SYNC = { randomCode, peerId, peerErrorZh, createTeacherPeer, connectStudent, downloadJson, joinUrl };
+  function postInbox(url, payload) {
+    if (!url) return Promise.reject(new Error("尚未設定作業收件網址"));
+    return fetch(url, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).then(() => ({ ok: true }));
+  }
+
+  global.DMM_SYNC = { randomCode, peerId, peerErrorZh, createTeacherPeer, connectStudent, downloadJson, joinUrl, postInbox };
 })(window);

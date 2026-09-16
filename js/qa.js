@@ -97,16 +97,16 @@
   assert("完整卷完成度 100%", S.completion(ready).pct === 100);
   assert("完整卷得分 100%", S.overall(ready).pct === 100);
   assert("完整卷建議通過", S.reviewSuggest(ready).decision === "通過");
+  assert("作答明細涵蓋核心詞", S.writtenWork(ready).some((row) => row.section === "核心詞彙" && row.ok));
 
   const noSafety = readyStudent();
   noSafety.answers.safetyQuiz = [1, 0, 0];
-  assert("安全未達 100 不可繳交", S.canSubmit(noSafety) === false);
+  assert("報到後即使安全未過也可交給老師", S.canSubmit(noSafety) === true);
   assert("安全未過建議補救", S.reviewSuggest(noSafety).decision === "需補救");
 
   const noCheckin = readyStudent();
   noCheckin.profile = { klass: "", number: "", name: "", group: "", classCode: "" };
   assert("未報到不可繳交", S.canSubmit(noCheckin) === false);
-  assert("繳交門檻需要報到與安全全對", S.canSubmit(noCheckin) === false && S.canSubmit(noSafety) === false && S.canSubmit(ready) === true);
 
   const noName = readyStudent();
   noName.profile.name = "";
@@ -222,7 +222,7 @@
         <ul>
           <li>手機 375px：報到欄位與按鈕可點、無左右滑動</li>
           <li>教師台：錯誤 PIN 進不去；正確 PIN 可開課、匯入 JSON、標記通過／需補救</li>
-          <li>學生繳交：未報到或安全未過時按鈕應停用</li>
+          <li>學生繳交：未報到時「交給老師」應停用；已報到即可送出作答給老師打分數</li>
           <li>聽發音：Chrome／Edge 可讀英文詞</li>
         </ul>
         <p class="help">自動閘門只保證內容與計分。版面、觸控與即時連線仍需用真實瀏覽器點過。</p>

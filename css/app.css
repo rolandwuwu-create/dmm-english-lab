@@ -131,6 +131,19 @@ button, .btn, .choice, .seg, .icon-btn, .module-card, .dock a, .dock button { cu
   margin: 0; color: var(--color-muted-fg); font-size: 0.78rem;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.save-ok { color: var(--color-success); font-weight: 700; font-size: 0.75rem; }
+.step-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+.step-list li { min-width: 0; }
+.next-bar {
+  width: min(1100px, calc(100% - 1.5rem));
+  margin: 0.85rem auto 0;
+}
 .topbar .btn { flex: 0 0 auto; }
 .topbar-progress { flex: 1; min-width: 72px; }
 .progress-track {

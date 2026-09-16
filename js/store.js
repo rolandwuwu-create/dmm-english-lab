@@ -76,6 +76,7 @@
   function saveStudent(state) {
     try {
       if (state?.profile?.classCode) rememberClassCode(state.profile.classCode);
+      state.lastSavedAt = new Date().toISOString();
       localStorage.setItem(KEY, JSON.stringify(state));
       return state;
     } catch (err) {
