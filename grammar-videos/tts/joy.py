@@ -124,6 +124,11 @@ def audio_data(res):
     return chunks[-1]
 
 
+def model():
+    """TTS model to speak with; JOY_TTS_MODEL overrides the one joy was built on."""
+    return os.environ.get("JOY_TTS_MODEL") or json.loads(ID_FILE.read_text())["model"]
+
+
 def speak(text, style=None):
     """Return WAV bytes of joy reading text verbatim."""
     if not ID_FILE.exists():
@@ -133,7 +138,7 @@ def speak(text, style=None):
     if style:
         part["annotations"] = [{"type": "speech_metadata", "style": style}]
     res = call("POST", "/interactions", {
-        "model": joy["model"],
+        "model": model(),
         "input": [{"type": "user_input", "content": [part]}],
         "response_format": {"type": "audio"},
         "generation_config": {"speech_config": [{"voice": joy["id"]}]},

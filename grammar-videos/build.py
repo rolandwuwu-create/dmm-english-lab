@@ -4,7 +4,7 @@
   python3 grammar-videos/build.py grammar-videos/lessons/01_conditionals.py
 
 Narration is spoken by the replicated voice joy (tts/joy.py, needs
-GEMINI_API_KEY). Clips are cached in build/<slug>/audio, so a rebuild only
+GEMINI_API_KEY; JOY_TTS_MODEL picks another TTS model for a draft). Clips are cached in build/<slug>/audio, so a rebuild only
 pays for lines that changed. Output: out/<slug>.mp4 and out/<slug>.srt.
 Needs: pip install playwright imageio-ffmpeg (Chromium from Playwright).
 """
@@ -58,9 +58,13 @@ def pcm_from_wav(data):
     return array.array("h", out.stdout)
 
 
+def voice_model():
+    return json.loads(joy.ID_FILE.read_text())["model"]
+
+
 def narration(cache, text, style):
     voice = json.loads(joy.ID_FILE.read_text())
-    key = hashlib.sha1(json.dumps([text, style, voice["id"], voice["model"]]).encode()).hexdigest()[:16]
+    key = hashlib.sha1(json.dumps([text, style, voice["id"], joy.model()]).encode()).hexdigest()[:16]
     path = cache / f"{key}.wav"
     if not path.exists():
         print(f"  TTS: {text[:40]}…")
@@ -257,7 +261,8 @@ def main():
     lines.append(f"file '{files[-1]}'")
     (work / "frames.ffconcat").write_text("\n".join(lines) + "\n")
 
-    mp4 = out / f"{lesson.SLUG}.mp4"
+    name = lesson.SLUG + ("" if joy.model() == voice_model() else "-" + joy.model())
+    mp4 = out / f"{name}.mp4"
     print(f"[{lesson.TITLE}] encoding {mp4.name}")
     subprocess.run([
         joy.ffmpeg(), "-v", "error", "-y",
@@ -270,7 +275,7 @@ def main():
         str(mp4),
     ], check=True)
 
-    srt = out / f"{lesson.SLUG}.srt"
+    srt = out / f"{name}.srt"
     srt.write_text("".join(f"{n}\n{srt_time(a)} --> {srt_time(b)}\n{text}\n\n"
                            for n, (a, b, text) in enumerate(subs, 1)), encoding="utf-8")
     print(f"Done: {mp4} ({len(audio) / SR / 60:.1f} min), {srt.name}")
