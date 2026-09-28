@@ -59,7 +59,8 @@ def pcm_from_wav(data):
 
 
 def voice_model():
-    return json.loads(joy.ID_FILE.read_text())["model"]
+    voice = json.loads(joy.ID_FILE.read_text())
+    return voice.get("speak_model") or voice["model"]
 
 
 def narration(cache, text, style):
@@ -79,7 +80,7 @@ def weight(line):
 
 
 def pauses(pcm, min_len=0.14):
-    """Midpoints (s) of quiet stretches in the clip."""
+    """(midpoint, length) in seconds of quiet stretches in the clip."""
     win = SR // 50  # 20 ms
     rms = []
     for i in range(0, len(pcm) - win, win):
@@ -88,30 +89,33 @@ def pauses(pcm, min_len=0.14):
     if not rms:
         return []
     quiet = max(rms) * 0.06
-    mids, start = [], None
+    found, start = [], None
     for i, r in enumerate(rms + [quiet + 1]):
         if r < quiet and start is None:
             start = i
         elif r >= quiet and start is not None:
             if (i - start) * 0.02 >= min_len and start > 0:
-                mids.append((start + i) / 2 * 0.02)
+                found.append(((start + i) / 2 * 0.02, (i - start) * 0.02))
             start = None
-    return mids
+    return found
 
 
 def caption_times(pcm, lines):
-    """Start offsets of each caption line inside the clip, snapped to pauses."""
+    """Start offsets of each caption line inside the clip, snapped to pauses.
+
+    Each boundary is estimated from the previous one over the time left, so
+    errors don't pile up, and a longer pause beats a closer but shorter one."""
     total = len(pcm) / SR
     weights = [weight(line) for line in lines]
-    estimates, acc = [], 0
-    for w in weights[:-1]:
-        acc += w
-        estimates.append(acc / sum(weights) * total)
     candidates = pauses(pcm)
     starts, prev = [0.0], 0.0
-    for est in estimates:
-        near = [c for c in candidates if c > prev + 0.4 and abs(c - est) < 1.4]
-        t = min(near, key=lambda c: abs(c - est)) if near else max(est, prev + 0.4)
+    for j in range(1, len(lines)):
+        est = prev + weights[j - 1] / sum(weights[j - 1:]) * (total - prev)
+        near = [(mid, length) for mid, length in candidates if mid > prev + 0.4 and abs(mid - est) < 1.6]
+        if near:
+            t = max(near, key=lambda c: c[1] - 0.3 * abs(c[0] - est))[0]
+        else:
+            t = max(est, prev + 0.4)
         starts.append(t)
         prev = t
     return starts
@@ -121,12 +125,24 @@ def display(line):
     return re.sub(r"[，。；：、]$", "", line.strip())
 
 
+def chapter_title(scene):
+    """YouTube chapter name: the slide's chapter key, kicker or heading."""
+    if scene.get("layout") == "hero":
+        return "開場"
+    if scene.get("chapter"):
+        return scene["chapter"]
+    m = re.search(r'<(?:div class="kicker"|h2)>(.*?)</', scene["html"], re.S)
+    return re.sub(r"<[^>]+>", "", m.group(1)).strip() if m else ""
+
+
 def build_timeline(lesson, cache):
     """One TTS request per slide (the daily quota is per request); the clip is
-    then cut at the pauses between steps so each step can get its own gap."""
+    then cut at the pauses between steps so each step can get its own gap.
+    Quiz slides (steps with think time) get one request per step instead."""
     audio = array.array("h")
     segs = []  # (start_s, end_s, frame dict)
     subs = []  # (start_s, end_s, text)
+    chapters = []  # (start_s, title)
     total = len(lesson.SCENES)
 
     def silence(sec):
@@ -139,34 +155,46 @@ def build_timeline(lesson, cache):
         base = {"brand": lesson.BRAND, "html": scene["html"], "index": i, "total": total,
                 "layout": scene.get("layout", "")}
         steps = scene["steps"]
-        lines = [line for step in steps for line in step["say"]]
-        pcm = narration(cache, join_lines(lines), scene.get("style", DEFAULT_STYLE))
-        starts = [round(t * SR) for t in caption_times(pcm, lines)] + [len(pcm)]
+        style = scene.get("style", DEFAULT_STYLE)
+        # clips[k] = (pcm, caption start offsets) for step k
+        if any(step.get("think") for step in steps):
+            # Quiz slides: one request per step, so no cut can land inside a question.
+            clips = []
+            for step in steps:
+                pcm = narration(cache, join_lines(step["say"]), style)
+                clips.append((pcm, caption_times(pcm, step["say"])))
+        else:
+            lines = [line for step in steps for line in step["say"]]
+            pcm = narration(cache, join_lines(lines), style)
+            starts = [round(t * SR) for t in caption_times(pcm, lines)] + [len(pcm)]
+            clips, n = [], 0
+            for step in steps:
+                count = len(step["say"])
+                cut = starts[n:n + count + 1]
+                clips.append((pcm[cut[0]:cut[-1]], [(c - cut[0]) / SR for c in cut[:-1]]))
+                n += count
 
         t = now()
+        chapters.append((t, chapter_title(scene)))
         silence(LEAD)
         segs.append((t, now(), {**base, "step": 0, "caption": ""}))
-        n = 0  # index of the step's first line in `lines`
-        for k, step in enumerate(steps, start=1):
-            count = len(step["say"])
+        for k, (step, (pcm, starts)) in enumerate(zip(steps, clips), start=1):
+            lines = step["say"]
             t0 = now()
-            audio.extend(pcm[starts[n]:starts[n + count]])
-            for j in range(count):
-                a = t0 + (starts[n + j] - starts[n]) / SR
-                b = t0 + (starts[n + j + 1] - starts[n]) / SR
-                text = display(lines[n + j])
-                segs.append((a, b, {**base, "step": k, "caption": text}))
-                subs.append((a, b, text))
+            audio.extend(pcm)
+            ends = starts[1:] + [len(pcm) / SR]
+            for line, a, b in zip(lines, starts, ends):
+                segs.append((t0 + a, t0 + b, {**base, "step": k, "caption": display(line)}))
+                subs.append((t0 + a, t0 + b, display(line)))
             for left in range(step.get("think", 0), 0, -1):
                 t = now()
                 silence(1.0)
                 segs.append((t, now(), {**base, "step": k, "caption": f"想一想… {left}", "captionClass": "count"}))
-            n += count
             last = k == len(steps)
             t = now()
             silence(TAIL if last else GAP)
-            segs.append((t, now(), {**base, "step": k, "caption": "" if last else display(lines[n - 1])}))
-    return audio, segs, subs
+            segs.append((t, now(), {**base, "step": k, "caption": "" if last else display(lines[-1])}))
+    return audio, segs, subs, chapters
 
 
 FONTS = ["Noto+Sans+TC:wght@400;500;700;900", "Nunito:wght@600;800;900"]
@@ -240,7 +268,7 @@ def main():
     out.mkdir(exist_ok=True)
 
     print(f"[{lesson.TITLE}] narration")
-    audio, segs, subs = build_timeline(lesson, cache)
+    audio, segs, subs, _ = build_timeline(lesson, cache)
     wav_path = work / "narration.wav"
     with wave.open(str(wav_path), "wb") as w:
         w.setnchannels(1)

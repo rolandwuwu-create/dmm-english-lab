@@ -7,7 +7,7 @@ think 是念完後留給學生想的秒數（畫面倒數）。
 
 TITLE = "假設語氣"
 SLUG = "01-conditionals"
-BRAND = "Joy 的英文文法教室 · 假設語氣"
+BRAND = "Joy 的英文小教室 · 假設語氣"
 
 SCENES = [
     # 1 開場

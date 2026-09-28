@@ -125,8 +125,9 @@ def audio_data(res):
 
 
 def model():
-    """TTS model to speak with; JOY_TTS_MODEL overrides the one joy was built on."""
-    return os.environ.get("JOY_TTS_MODEL") or json.loads(ID_FILE.read_text())["model"]
+    """TTS model to speak with: JOY_TTS_MODEL, else speak_model, else the model joy was built on."""
+    voice = json.loads(ID_FILE.read_text())
+    return os.environ.get("JOY_TTS_MODEL") or voice.get("speak_model") or voice["model"]
 
 
 def speak(text, style=None):

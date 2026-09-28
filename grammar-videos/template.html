@@ -145,10 +145,20 @@
   .hero h1 { font-size: 132px; line-height: 1.15; }
   .hero .kicker { font-size: 38px; }
   .hero .lead { font-size: 46px; color: var(--ink); }
+  .hero h1 .en { font-size: 108px; }
   .ghost {
-    position: absolute; right: -40px; bottom: -60px; font: 900 520px/1 var(--en);
-    color: var(--coral); opacity: .07; pointer-events: none;
+    position: absolute; right: 0; top: -30px; font: 900 300px/1 var(--en); white-space: nowrap;
+    color: var(--coral); opacity: .08; pointer-events: none;
   }
+  table.compact td { padding: 16px 28px; font-size: 34px; }
+  table.compact td:first-child { font-size: 30px; }
+
+  .timeline { display: flex; height: 150px; font: 700 34px/1.3 var(--zh); text-align: center; }
+  .timeline > div { display: grid; place-items: center; padding: 0 20px; }
+  .timeline .before { flex: 3; background: #eeeae2; color: var(--muted); border-radius: 24px 0 0 24px; }
+  .timeline .at { flex: 1.3; background: var(--teal-soft); color: var(--teal); border-radius: 0 24px 24px 0;
+    border-left: 6px solid var(--teal); }
+  .timeline .en { font-family: var(--en); font-weight: 900; }
 
   /* step reveals */
   [data-s] { transition: none; }
