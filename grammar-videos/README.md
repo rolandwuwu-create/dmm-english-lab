@@ -45,3 +45,12 @@ python3 grammar-videos/build.py grammar-videos/lessons/01_conditionals.py
 - 輸出：`out/<slug>.mp4` 與字幕檔 `out/<slug>.srt`（不進 git）
 - 配音快取在 `build/<slug>/audio`，改稿後重跑只會重念改過的投影片
 - Tier 1 的 `gemini-3.8-flash-tts` 每天限 100 次請求；一支影片約 12 次
+
+## YouTube（Joy 的英文小教室）
+
+```
+python3 grammar-videos/channel.py   # 大頭照、橫幅、每支影片的縮圖 → out/youtube/
+python3 grammar-videos/youtube.py   # 標題、說明（含章節時間）、標籤 → out/youtube/upload.md
+```
+
+上傳要在 YouTube Studio 手動做：未經 Google 審核的 API 專案上傳的影片會被鎖成私人，無法公開。
