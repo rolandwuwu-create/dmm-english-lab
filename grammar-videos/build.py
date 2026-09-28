@@ -70,7 +70,16 @@ def narration(cache, text, style):
     if not path.exists():
         print(f"  TTS: {text[:40]}…")
         path.write_bytes(joy.speak(text, style))
-    return pcm_from_wav(path.read_bytes())
+    return trim(pcm_from_wav(path.read_bytes()))
+
+
+def trim(pcm, keep=0.08):
+    """Drop TTS lead-in/tail silence beyond `keep` seconds so captions and gaps line up."""
+    loud = max((abs(x) for x in pcm), default=0) * 0.04
+    first = next((i for i, x in enumerate(pcm) if abs(x) > loud), 0)
+    last = next((i for i in range(len(pcm) - 1, -1, -1) if abs(pcm[i]) > loud), len(pcm) - 1)
+    pad = int(keep * SR)
+    return pcm[max(0, first - pad):min(len(pcm), last + pad * 2)]
 
 
 def weight(line):
