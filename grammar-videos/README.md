@@ -32,3 +32,16 @@ joy 是用 Voice replication 從老師本人的錄音複製的聲音，存在 Go
    ```
 
 也可以直接在 Google AI Studio 的 Voice Replication 頁面錄音建立，再把拿到的 `voice_...` ID 填進 `tts/joy.voice-id.json`。
+
+## 做影片
+
+```
+pip install playwright imageio-ffmpeg
+python3 grammar-videos/build.py grammar-videos/lessons/01_conditionals.py
+```
+
+- 講稿與投影片：`lessons/*.py`（每個 scene 是一張投影片，joy 一次念完一張）
+- 版型：`template.html`（1920×1080，字型 Noto Sans TC + Nunito，缺字型會自動下載）
+- 輸出：`out/<slug>.mp4` 與字幕檔 `out/<slug>.srt`（不進 git）
+- 配音快取在 `build/<slug>/audio`，改稿後重跑只會重念改過的投影片
+- Tier 1 的 `gemini-3.8-flash-tts` 每天限 100 次請求；一支影片約 12 次

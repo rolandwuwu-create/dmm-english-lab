@@ -13,3 +13,6 @@ design-system/
 grammar-videos/tts/private/
 grammar-videos/**/*.wav
 grammar-videos/**/*.mp3
+grammar-videos/build/
+grammar-videos/out/
+__pycache__/

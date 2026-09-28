@@ -81,13 +81,13 @@ def find_existing():
     return next((v for v in res.get("voices", []) if v.get("display_name") == NAME), None)
 
 
-def write_wav(path, b64):
+def to_wav_bytes(b64):
     raw = base64.b64decode(b64)
     if not raw.startswith(b"RIFF"):  # bare 16-bit mono PCM at 24 kHz
         raw = (b"RIFF" + struct.pack("<I", 36 + len(raw)) + b"WAVEfmt "
                + struct.pack("<IHHIIHH", 16, 1, 1, 24000, 48000, 2, 16)
                + b"data" + struct.pack("<I", len(raw)) + raw)
-    Path(path).write_bytes(raw)
+    return raw
 
 
 def create(args):
@@ -124,20 +124,25 @@ def audio_data(res):
     return chunks[-1]
 
 
-def say(args):
+def speak(text, style=None):
+    """Return WAV bytes of joy reading text verbatim."""
     if not ID_FILE.exists():
         sys.exit("Voice joy has no saved id yet. Run: python3 joy.py create --source ... --consent ...")
     joy = json.loads(ID_FILE.read_text())
-    text = {"type": "text", "text": args.text}
-    if args.style:
-        text["annotations"] = [{"type": "speech_metadata", "style": args.style}]
+    part = {"type": "text", "text": text}
+    if style:
+        part["annotations"] = [{"type": "speech_metadata", "style": style}]
     res = call("POST", "/interactions", {
         "model": joy["model"],
-        "input": [{"type": "user_input", "content": [text]}],
+        "input": [{"type": "user_input", "content": [part]}],
         "response_format": {"type": "audio"},
         "generation_config": {"speech_config": [{"voice": joy["id"]}]},
     })
-    write_wav(args.out, audio_data(res))
+    return to_wav_bytes(audio_data(res))
+
+
+def say(args):
+    Path(args.out).write_bytes(speak(args.text, args.style))
     print(f"Saved {args.out}")
 
 
